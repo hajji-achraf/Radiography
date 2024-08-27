@@ -5,4 +5,9 @@ streamlit
 plotly
 scikit-learn
 openpyxl
-tensorflow
+streamlit==1.24.0
+tensorflow==2.14.0
+numpy==1.23.5
+Pillow==9.5.0
+# Ajoutez ici d'autres dépendances nécessaires
+
