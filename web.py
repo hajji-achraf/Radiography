@@ -30,8 +30,7 @@ def predict(image, model):
         return None
 
 # Charger le modèle
-model = load_model("models/model_radiography.h5")
-
+model = tf.keras.models.load_model("models\\model_radiography.h5")
 # Couleurs pour le texte
 header_color = "blue"
 subheader_color = "grey"
