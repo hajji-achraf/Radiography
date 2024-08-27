@@ -4,7 +4,8 @@ import numpy as np
 from PIL import Image
 
 # Charger le modèle
-model = tf.keras.models.load_model("models\\model_radiography.h5")
+model = tf.keras.models.load_model("models/model_radiography.h5")
+
 
 
 # Fonction pour faire des prédictions sur une image
