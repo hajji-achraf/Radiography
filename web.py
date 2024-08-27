@@ -3,26 +3,18 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# Assurer la compatibilité de la version de TensorFlow
-print(f"TensorFlow version: {tf.__version__}")
-
-# Charger le modèle avec gestion des erreurs
-def load_model():
+# Fonction pour charger le modèle avec gestion des objets personnalisés
+def load_model(model_path):
     try:
-        model = tf.keras.models.load_model("models/model_radiography.h5")
+        # Chargement du modèle avec gestion d'erreurs
+        model = tf.keras.models.load_model(model_path)
         return model
     except Exception as e:
         st.error(f"Erreur lors du chargement du modèle : {e}")
         return None
 
-model = load_model()
-
 # Fonction pour faire des prédictions sur une image
 def predict(image, model):
-    if model is None:
-        st.error("Le modèle n'a pas pu être chargé.")
-        return None
-    
     try:
         # Redimensionner l'image à la taille d'entrée du modèle
         image_resized = tf.image.resize(image, (256, 256))
@@ -32,11 +24,13 @@ def predict(image, model):
         image_batch = np.expand_dims(image_normalized, axis=0)
         # Faire la prédiction
         prediction = model.predict(image_batch)
-        # Retourner la prédiction (0 ou 1)
         return prediction[0][0]
     except Exception as e:
         st.error(f"Erreur lors de la prédiction : {e}")
         return None
+
+# Charger le modèle
+model = load_model("models/model_radiography.h5")
 
 # Couleurs pour le texte
 header_color = "blue"
@@ -162,48 +156,42 @@ with tab1:
     st.markdown("<div class='subheader'>Pooling layer</div>", unsafe_allow_html=True)
     st.markdown(f"""
         <div class='text'>
-        Pooling layers help in reducing the dimensionality of the features produced by the convolution layer while retaining the important aspects. The primary types of pooling layers are max pooling and average pooling. Max pooling extracts the maximum value from the feature map, whereas average pooling computes the average value. The pooling operation is performed to simplify the features and to enhance the model’s efficiency.
-        <br><br>
-        This example shows a 2x2 max pooling layer applied to the image. 
+        The goal of the pooling layer is to pull the most significant features from the convoluted matrix. This is done by applying some aggregation function such as the max function or average function to a window of size 2x2 in a non-overlapping fashion.
         </div>
         """, unsafe_allow_html=True)
 
     st.image("images/image4.jpg")
-
-    st.markdown("<div class='subheader'>Fully connected layers</div>", unsafe_allow_html=True)
     st.markdown(f"""
         <div class='text'>
-        The fully connected layers or FC layers are typical dense layers that come after the convolutional and pooling layers. These layers help in classifying the image based on the features extracted in the previous layers.
-        <br><br>
-        The output of the final convolutional layer is flattened into a single vector and fed into the fully connected layers. The classification is performed in these layers using the features detected in the convolutional layers.
+        Max pooling is a pooling layer where we pick the maximum value from each window, making the network more resilient to minor changes in the input.
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div class='subheader'>Summary</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subheader'>Fully Connected Layers</div>", unsafe_allow_html=True)
     st.markdown(f"""
         <div class='text'>
-        CNNs are instrumental in solving complex image classification problems with their hierarchical architecture, enabling the extraction and understanding of features at various levels of abstraction. By employing convolutional, activation, pooling, and fully connected layers, CNNs are adept at learning intricate patterns and making accurate predictions.
+        The fully connected layers are located at the end of the CNN model. They connect every neuron from the previous layer to every neuron in the fully connected layer. This results in a comprehensive feature combination for the final classification decision.
         </div>
         """, unsafe_allow_html=True)
 
 with tab2:
-    # Prédiction sur les radiographies
+    # Section pour la prédiction d'images radiographiques
     st.markdown("<div class='header'>Radiography Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='text'>Please upload an X-ray image to predict whether it is normal or abnormal.</div>", unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Upload an image file", type=["jpg", "jpeg", "png"])
-
-    if uploaded_file:
+    uploaded_file = st.file_uploader("Choose an X-ray image...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
         # Charger l'image
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
         
-        # Prétraiter l'image pour le modèle
-        image = np.array(image.convert("RGB"))
-        prediction = predict(image, model)
-
+        # Prétraiter l'image
+        image_np = np.array(image)
+        prediction = predict(image_np, model)
+        
         if prediction is not None:
-            st.write(f"Prediction probability: {prediction:.2f}")
             if prediction > 0.5:
-                st.write("The model predicts this image as 'abnormal' (possible presence of cancer).")
+                st.write("The model predicts: Abnormal")
             else:
-                st.write("The model predicts this image as 'normal' (no visible abnormalities).")
+                st.write("The model predicts: Normal")
