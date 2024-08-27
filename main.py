@@ -1,10 +1,14 @@
 import tensorflow as tf
 import os
 import cv2
-import numpy as np
+from sklearn.metrics import precision_recall_curve
+import imghdr
+import ssl
 import matplotlib.pyplot as plt
+import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.metrics import Precision, Recall, BinaryAccuracy
 from sklearn.metrics import precision_recall_curve
 
@@ -31,33 +35,62 @@ for image_class in os.listdir(data_dir):
             print('Issue with image {}'.format(image_path))
 
 # Charger le dataset
-data = tf.keras.utils.image_dataset_from_directory(data_dir, image_size=(256, 256))
+data = tf.keras.utils.image_dataset_from_directory(data_dir)
+data_iterator = data.as_numpy_iterator()
+batch = data_iterator.next()
+
+# Afficher les informations du batch
+print(batch[0].shape)
+print(batch[1])
+
+# Obtenir les noms des classes
+class_names = data.class_names
+
+# Afficher les images avec les étiquettes
+fig, ax = plt.subplots(ncols=4, figsize=(20, 20))
+for idx, img in enumerate(batch[0][:4]):
+    ax[idx].imshow(img.astype(int))
+    label = batch[1][idx]
+    class_name = class_names[label]
+    ax[idx].title.set_text(f"Classe: {class_name}, Indice: {label}")
+plt.show()
+
+# Prétraiter les données
 data = data.map(lambda x, y: (x / 255.0, y))
+
+# Créer un nouvel itérateur
+scaled_iterator = data.as_numpy_iterator()
+batch = scaled_iterator.next()
+
+# Afficher la longueur du dataset
+print(len(data))
+print(batch[0].min())
+print(batch[0].max())
 
 # Diviser le dataset en ensembles d'entraînement, validation, test
 train_size = int(len(data) * 0.7)
 val_size = int(len(data) * 0.2) + 1
 test_size = int(len(data) * 0.1)
+print(train_size, val_size, test_size)
 
 train = data.take(train_size)
 val = data.skip(train_size).take(val_size)
 test = data.skip(train_size + val_size).take(test_size)
 
 # Construction du modèle
-model = Sequential([
-    Conv2D(16, (3, 3), activation='relu', input_shape=(256, 256, 3)),
-    MaxPooling2D(),
-    Conv2D(32, (3, 3), activation='relu'),
-    MaxPooling2D(),
-    Conv2D(64, (3, 3), activation='relu'),
-    MaxPooling2D(),
-    Flatten(),
-    Dense(256, activation='relu'),
-    Dense(1, activation='sigmoid')
-])
+model = Sequential()
+model.add(Conv2D(16, (3, 3), activation='relu', input_shape=(256, 256, 3)))
+model.add(MaxPooling2D())
+model.add(Conv2D(32, (3, 3), activation='relu'))
+model.add(MaxPooling2D())
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D())
+model.add(Flatten())
+model.add(Dense(256, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
 
 # Compilation du modèle
-model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(reduction='sum'), metrics=['accuracy'])
+model.compile(optimizer='adam', loss=tf.keras.losses.BinaryCrossentropy(), metrics=['accuracy'])
 model.summary()
 
 # Entraînement du modèle
@@ -120,7 +153,7 @@ plt.axis('off')
 plt.show()
 
 resize = tf.image.resize(img, (256, 256))
-yhat = model.predict(np.expand_dims(resize / 255.0, 0))
+yhat = model.predict(np.expand_dims((resize / 255.0), 0))
 
 if yhat > 0.5:
     print('Normal')
