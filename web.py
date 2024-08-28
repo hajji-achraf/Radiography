@@ -151,52 +151,47 @@ with tab1:
         <br><br>
         The most common aggregation functions that can be applied are:
         <ul>
-            <li>Max pooling, which is the maximum value of the feature map segment.</li>
-            <li>Average pooling, which is the average value of the feature map segment.</li>
+            <li>Max pooling, which is the most commonly used pooling function, selects the maximum value from each feature map.</li>
+            <li>Average pooling, where the average value from each feature map is selected.</li>
         </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    st.image("images/image4.jpg")
-
-    st.markdown("<div class='subheader'>Fully connected layer</div>", unsafe_allow_html=True)
+    st.markdown("<div class='subheader'>Fully Connected Layers</div>", unsafe_allow_html=True)
     st.markdown(f"""
         <div class='text'>
-        The fully connected layer is often referred to as the last layer of the CNN. In this layer, each neuron is connected to every neuron in the previous layer. The output from the fully connected layer is then passed to the activation function to produce a result, which can be used to classify the input data.
+        After the convolutional and pooling layers, the high-level reasoning in the neural network is performed via fully connected layers. Each neuron in a fully connected layer is connected to every neuron in the previous layer.
         <br><br>
-        For instance, in a handwritten digit classification task, the final output might be 10 neurons, each representing a digit from 0 to 9. The neuron with the highest activation value indicates the predicted digit.
+        In a neural network, the final fully connected layer is used for classification tasks, where the final result is produced based on the features extracted from the previous layers.
+        <br><br>
+        The final layer contains the number of neurons that match the number of classes you want to predict. For binary classification, a single neuron with a sigmoid activation function is commonly used.
         </div>
         """, unsafe_allow_html=True)
-
-    st.image("images/image5.jpg")
 
 with tab2:
-    # Section de prédiction d'images radiographiques
-    st.markdown("<div class='header'>Radiography Image Prediction</div>", unsafe_allow_html=True)
-    st.markdown(f"""
-        <div class='text'>
-        Upload a radiographic image (in JPG format) to check if it is normal or abnormal.
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Téléchargement de l'image
-    uploaded_file = st.file_uploader("Choose a radiographic image...", type="jpg")
-
+    # Page pour la prédiction radiographique
+    st.title("Radiography Image Prediction")
+    
+    uploaded_file = st.file_uploader("Upload an X-ray image", type=["jpg", "png"])
+    
     if uploaded_file is not None:
-        # Ouvrir l'image
-        image = Image.open(uploaded_file).convert('RGB')  # Assurez-vous que l'image est en RGB
+        # Charger l'image
+        image = Image.open(uploaded_file)
         # Convertir en tableau numpy
         image_array = np.array(image)
-        # Afficher l'image
-        st.image(image, caption='Uploaded Image.', use_column_width=True)
-        st.write("")
-        st.write("Classifying...")
-
+        # Vérifier que l'image est en couleur (3 canaux)
+        if len(image_array.shape) == 2:  # Grayscale
+            image_array = np.stack([image_array] * 3, axis=-1)
+        
+        st.image(image_array, caption='Uploaded Image', use_column_width=True)
+        
         # Faire la prédiction
-        prediction = predict(image_array)
-
-        if prediction is not None:
-            if prediction > 0.5:
-                st.write("The image is classified as abnormal.")
+        result = predict(image_array)
+        
+        if result is not None:
+            if result > 0.5:
+                st.write("Prediction: Abnormal")
             else:
-                st.write("The image is classified as normal.")
+                st.write("Prediction: Normal")
+        else:
+            st.write("Prediction could not be made.")
